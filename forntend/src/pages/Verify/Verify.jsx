@@ -6,19 +6,26 @@ import axios from 'axios';
 
 const Verify = () => {
 
-const[searchParams, setSearchParams] = useSearchParams();
+const[searchParams] = useSearchParams();
 const success = searchParams.get("success")
 const orderId = searchParams.get("orderId")
-const {url} = useContext(StoreContext);
+const {url, showNotification} = useContext(StoreContext);
 const navigate = useNavigate()
 
 
 const verifyPayment = async () => {
-  const response = await axios.post(url+"/api/order/verify",{success,orderId});
-  if (response.data.success) {
-     navigate("/myorders");
-  }
-  else{
+  try {
+    const response = await axios.post(url+"/api/order/verify",{success,orderId});
+    if (response.data.success) {
+       showNotification("Payment verified successfully.", "success");
+       navigate("/myorders");
+    }
+    else{
+      showNotification(response.data.message || "Payment was not completed.", "error");
+      navigate("/")
+    }
+  } catch (error) {
+    showNotification(error.response?.data?.message || "Unable to verify payment.", "error");
     navigate("/")
   }
 }

@@ -6,13 +6,26 @@ import { assets } from '../../assets/assets';
 
 
 const MyOrders = () => {
-   const {url,token} = useContext(StoreContext);
+   const {url,token,showNotification} = useContext(StoreContext);
    const [data,setData] = useState([]);
+   const [loading, setLoading] = useState(true);
 
    const fetchOrders = async () => {
-    const response = await axios.post(url+"/api/order/userorders",{},{headers:{token}});
-    setData(response.data.data);
-    console.log(response.data.data);
+    setLoading(true);
+    try {
+      const response = await axios.post(url+"/api/order/userOrders",{},{headers:{token}});
+      if (response.data.success) {
+        setData(response.data.data || []);
+      } else {
+        setData([]);
+        showNotification(response.data.message || "Unable to load your orders.", "error");
+      }
+    } catch (error) {
+      setData([]);
+      showNotification(error.response?.data?.message || "Unable to load your orders.", "error");
+    } finally {
+      setLoading(false);
+    }
    }
   useEffect (()=>{
      if (token) {
@@ -24,6 +37,8 @@ const MyOrders = () => {
     <div className='my-orders'>
        <h2>My Orders</h2>
        <div className="container">
+        {loading ? <p>Loading your orders...</p> : null}
+        {!loading && !data.length ? <p>You have not placed any orders yet.</p> : null}
         {data.map((order,index)=>{
          return (
           <div key={index} className='my-orders-order'>

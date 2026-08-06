@@ -1,5 +1,11 @@
 import foodModel from "../models/foodModel.js";
 import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const uploadsDir = path.join(__dirname, "../uploads");
 
 const addFood = async (req, res) => {
   let image_filename = `${req.file.filename}`;
@@ -52,7 +58,7 @@ const removeFood = async (req, res) => {
     }
 
     if (food.image) {
-      fs.unlink(`uploads/${food.image}`, (err) => {
+      fs.unlink(path.join(uploadsDir, food.image), (err) => {
         if (err) {
           console.error("Error deleting image file:", err);
         }

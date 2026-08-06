@@ -6,7 +6,8 @@ import { useNavigate } from 'react-router-dom'
 
 const PlaceOrder = () => {
 
-const {getTotalCartAmount,token,food_list,cartItems,url,} = useContext(StoreContext)
+const {getTotalCartAmount,token,food_list,cartItems,url,showNotification,showLoading,hideLoading} = useContext(StoreContext)
+const [isSubmitting, setIsSubmitting] = useState(false)
 
 const [data, setData] = useState({
   firstName:"",
@@ -30,25 +31,40 @@ const onChangeHandler = (event) => {
 const placeOrder = async(event) => {
     event.preventDefault();
     let orderItems = [];
-    food_list.map((item) => {
+    food_list.forEach((item) => {
          if (cartItems[item._id]>0) {
-          let itemInfo = item;
-          itemInfo["quantity"] = cartItems[item._id];
-          orderItems.push(itemInfo)
+          orderItems.push({ ...item, quantity: cartItems[item._id] })
          }
     })
+
+   if (!orderItems.length) {
+    showNotification("Your cart is empty. Add an item before checking out.", "error");
+    navigate("/cart");
+    return;
+   }
+
    let orderData = {
     address:data,
     items:orderItems,
     amount:getTotalCartAmount()+2,
    }
-   let response = await axios.post(url+"/api/order/place",orderData,{headers:{token}});
-   if (response.data.success) {
-      const {session_url} = response.data;
-      window.location.replace(session_url);
-   }
-   else{
-    alert("Error");
+   setIsSubmitting(true)
+   showLoading("Redirecting you to payment...")
+
+   try {
+     let response = await axios.post(url+"/api/order/place",orderData,{headers:{token}});
+     if (response.data.success) {
+        const {session_url} = response.data;
+        window.location.replace(session_url);
+     }
+     else{
+      showNotification(response.data.message || "Unable to place your order.", "error");
+     }
+   } catch (error) {
+    showNotification(error.response?.data?.message || "Unable to place order", "error");
+   } finally {
+    setIsSubmitting(false)
+    hideLoading()
    }
 }
 
@@ -103,7 +119,7 @@ useEffect(()=>{
               <b>${getTotalCartAmount()===0?0:getTotalCartAmount()+2}</b>
             </div>
           </div>
-          <button type='submit'> PROCEED TO PAYMENT</button>
+          <button type='submit' disabled={isSubmitting}>{isSubmitting ? "PROCESSING..." : "PROCEED TO PAYMENT"}</button>
         </div>
       </div>
     </form>
